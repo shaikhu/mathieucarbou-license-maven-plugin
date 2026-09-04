@@ -82,6 +82,28 @@ class SelectionTest {
     Assertions.assertEquals(0, selection.getScanner().getExcludedFiles().length, debugMessage);
   }
 
+  @Test
+  void test_folder_exclusions_are_normalized_to_the_platform_separator() {
+    String expected = "target" + File.separator + "**";
+    Assertions.assertEquals(expected, Selection.normalizeSeparators("target/**"));
+    Assertions.assertEquals(expected, Selection.normalizeSeparators("target\\**"));
+    Assertions.assertEquals(expected, Selection.normalizeSeparators("target/"));
+    Assertions.assertEquals(expected, Selection.normalizeSeparators(" target/** "));
+  }
+
+  @Test
+  void test_folder_exclusions_are_pruned_whichever_separator_was_used() {
+    // the sub-module exclusions AbstractLicenseMojo builds are written with "/", so they must be
+    // recognised on Windows too, without breaking the "\\" spelling adopted as a workaround
+    String[] expected = new String[]{"target" + File.separator + "**"};
+    Assertions.assertArrayEquals(expected, folderExcludesFor("target/**"));
+    Assertions.assertArrayEquals(expected, folderExcludesFor("target\\**"));
+  }
+
+  private String[] folderExcludesFor(String exclude) {
+    return new Selection(new File("."), new String[0], new String[]{exclude}, false, log).findFolderExcludes();
+  }
+
   private String buildDebugMessage(DirectoryScanner scanner) {
     return "excludedDirs=" + asList(scanner.getExcludedDirectories()) + ",\n" +
         "excludedFiles=" + asList(scanner.getExcludedFiles()) + ",\n" +

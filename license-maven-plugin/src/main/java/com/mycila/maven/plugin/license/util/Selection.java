@@ -100,15 +100,23 @@ public final class Selection {
     }
   }
 
-  private String[] findFolderExcludes() { // less we keep, less overhead we get so we only use user excludes there
+  String[] findFolderExcludes() { // less we keep, less overhead we get so we only use user excludes there
     final List<String> excludes = new ArrayList<>(excluded.length / 2 /*estimate*/);
     for (final String exclude : (userExcluded != null ? userExcluded : excluded)) {
-      if (isFolderExclusion(exclude)) {
-        excludes.add(exclude);
+      final String normalized = normalizeSeparators(exclude);
+      if (isFolderExclusion(normalized)) {
+        excludes.add(normalized);
       }
     }
     Collections.reverse(excludes); // assume user ones are more important than the set of defaults we appended
     return excludes.toArray(new String[0]);
+  }
+
+  // patterns are conventionally written with '/', so normalize them the way the scanner normalizes
+  // its own includes and excludes (DirectoryScanner#setExcludes) before testing
+  static String normalizeSeparators(final String pattern) {
+    final String normalized = pattern.trim().replace('/', File.separatorChar).replace('\\', File.separatorChar);
+    return normalized.endsWith(File.separator) ? normalized + "**" : normalized;
   }
 
   private boolean isFolderExclusion(final String exclude) {
